@@ -1,0 +1,75 @@
+
+.menu-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    padding: 1.1rem;
+}
+
+.menu {
+    width: 64px;
+    height: auto;
+    z-index: 1000;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.menu-open {
+    transform: rotate(90deg);
+}
+
+.menu-options {
+    background-color: #ccc;
+    border-radius: 8px;
+    z-index: 999;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease, padding 0.2s ease;
+    padding: 0;
+}
+
+.menu-options-active {
+    max-height: 500px; /* 设置一个足够大的值 */
+    padding: 0.5rem;
+}
+
+.menu-options ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+
+.main {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100vh;
+    border: 1px solid #ccc;
+    align-items: center;
+    padding: 1.1rem;
+    gap: 2.2rem;
+}
+
+.sidebar{
+    border: 1px solid #ccc;
+    display: flex;
+    gap: 2.2rem;
+    align-items: center;
+}
+
+.tool-list{
+    display: flex;
+    gap: 1.1rem;
+    list-style: none;
+}
+.tool-list li{
+    cursor: pointer;
+    padding: 0.5rem;
+    min-width: 100px;
+    text-align: center;
+}
