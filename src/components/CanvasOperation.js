@@ -74,6 +74,23 @@ function drawCanvas(canvasRef, level, mapData, preview=null){
     console.log(`Canvas redrawn for Level ${level}`);
 }
 
+ // 绘制单个预览单元
+const drawUnit = (ctx, drawX, drawY, toolId, isValid) => {
+    const size = element_volume.value;
+    if (imageMap[toolId]) {
+        ctx.save();
+        ctx.globalAlpha = 0.5; // 半透明
+        ctx.drawImage(imageMap[toolId], drawX, drawY, size, size);
+        
+        // 如果不可放置（被占用或超限），叠加红色
+        if (isValid === false) {
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.fillRect(drawX, drawY, size, size);
+        }
+        ctx.restore();
+    }
+};
+
 // 绘制预览效果
 function drawPreview(ctx, preview) {
     const size = element_volume.value;
@@ -89,17 +106,21 @@ function drawPreview(ctx, preview) {
         ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
         ctx.fillRect(x, y, size, size);
         ctx.restore();
-    } else if (imageMap[preview.toolId]) {
-        // 放置工具：半透明预览
-        ctx.save();
-        ctx.globalAlpha = 0.5; // 半透明
-        ctx.drawImage(imageMap[preview.toolId], x, y, size, size);
-        ctx.restore();
+    }
+    else{
+        if(preview.toolId == 6){
+            drawUnit(ctx, x, y, preview.toolId, preview.isValid);
+            drawUnit(ctx, x-size, y, preview.toolId, preview.isValid);
+            drawUnit(ctx, x+size, y, preview.toolId, preview.isValid);
+        }
+        else{
+            drawUnit(ctx, x, y, preview.toolId, preview.isValid);
+        }
     }
 }
 
 function drawMapElements(ctx, mapData) {
-    const cellSize = element_volume.value;
+    const size = element_volume.value;
     
     for (let row = 0; row < mapData.length; row++) {
         for (let col = 0; col < mapData[row].length; col++) {
@@ -107,12 +128,16 @@ function drawMapElements(ctx, mapData) {
             
             // 如果 ID 在 imageMap 中存在 (非0)
             if (imageMap[elementId]) {
+                if(elementId == 6){
+                    drawUnit(ctx, (col-1) * size, row * size, elementId, true);
+                    drawUnit(ctx, (col+1) * size, row * size, elementId, true);
+                }
                 ctx.drawImage(
                     imageMap[elementId], 
-                    col * cellSize, 
-                    row * cellSize, 
-                    cellSize, 
-                    cellSize
+                    col * size, 
+                    row * size, 
+                    size, 
+                    size
                 );
             }
         }

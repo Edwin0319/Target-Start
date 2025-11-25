@@ -41,17 +41,61 @@
     const canvasRef = ref(null)
     const isHovering = ref(false)
     const mousePos = ref({ x: -1, y: -1, col: -1, row: -1 })
+    const currentValid = ref(true)
+
+    function checkPlacementValidity(row, col, toolId){
+        if (!toolId) return false;
+        if (toolId === 'remove') return true; // 删除工具总是有效
+        const rows = props.mapData.length;
+        const cols = props.mapData[0].length;
+
+        // 边界与占用检查辅助函数
+        const isOccupied = (r, c) => {
+            if (r < 0 || r >= rows || c < 0 || c >= cols) return true; // 超出边界视为被占用
+            if(props.mapData[r][c-1] === 6 || props.mapData[r][c+1] === 6) return true;
+            return props.mapData[r][c] !== 0;
+        };
+
+        if (toolId === 6) { 
+            // 移动平台 (ID 6): 检查 左(col-1), 中(col), 右(col+1)
+            if (col - 1 < 0 || col + 1 >= cols) return false;
+            
+            if (isOccupied(row, col-1) || isOccupied(row, col) || isOccupied(row, col+1)) {
+                return false;
+            }
+        } 
+        // 星星数量限制 (ID 2)
+        else if (toolId === 2) {
+            let starCount = 0;
+            for(let r = 0; r < rows; r++) {
+                for(let c = 0; c < cols; c++) {
+                    if (props.mapData[r][c] === 2) starCount++;
+                }
+            }
+            if (starCount >= 3 || isOccupied(row, col)) return false;
+        }
+        else {
+            // 普通物品
+            if (isOccupied(row, col)) return false;
+        }
+        return true;
+    }
 
     function onMouseMove(event){
         isHovering.value = true;
         const pos = handleMouseMove(event, canvasRef);
         if (pos) {
+            // 计算当前位置是否有效
+            const isValid = checkPlacementValidity(pos.row, pos.col, props.activeTool);
+            currentValid.value = isValid;
+
             mousePos.value = pos;
             // 实时重绘：绘制地图 + 预览图
             drawCanvas(canvasRef, props.level, props.mapData, {
                 col: pos.col,
                 row: pos.row,
-                toolId: props.activeTool
+                toolId: props.activeTool,
+                isValid: isValid
             });
         }
     }
@@ -66,11 +110,14 @@
     // 鼠标左键点击：放置元素
     function onCanvasClick() {
         if (props.activeTool) {
-            emit('update-tile', {
-                row: mousePos.value.row,
-                col: mousePos.value.col,
-                toolId: props.activeTool
-            });
+            // 红色的则不执行
+            if(currentValid.value){
+                emit('update-tile', {
+                    row: mousePos.value.row,
+                    col: mousePos.value.col,
+                    toolId: props.activeTool
+                });
+            }
         }
     }
 
@@ -91,11 +138,15 @@
 
     // 监听 mapData 变化，重新绘制
     watch(() => props.mapData, (newData) => {
+        const isValid = isHovering.value ? checkPlacementValidity(mousePos.value.row, mousePos.value.col, props.activeTool) : true;
+        currentValid.value = isValid;
+
         // 如果鼠标正在悬停，保持预览
         const preview = isHovering.value ? {
             col: mousePos.value.col,
             row: mousePos.value.row,
-            toolId: props.activeTool
+            toolId: props.activeTool,
+            isValid: isValid
         } : null;
         
         drawCanvas(canvasRef, props.level, newData, preview);

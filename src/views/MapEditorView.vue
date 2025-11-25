@@ -124,7 +124,8 @@ function handleUpdateTile({ row, col, toolId }) {
     // 设置新值
     if (toolId === 'remove') {
         currentMapData.value[row][col] = 0;
-    } else {
+    } 
+    else {
         currentMapData.value[row][col] = toolId;
     }
     
