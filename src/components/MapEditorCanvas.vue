@@ -21,11 +21,15 @@
 
 <script setup>
     import { ref, inject, onMounted, watch } from 'vue'
-    import { drawCanvas, handleMouseMove } from '@/components/CanvasOperation.js'
+    import { drawCanvas, handleMouseMove, preloadImages } from '@/components/CanvasOperation.js'
     const props = defineProps({
         level: {
             type: Number,
             required: true
+        },
+        mapData: {
+            type: Array,
+            default: () => []
         }
     })
     const canvasRef = ref(null)
@@ -44,12 +48,15 @@
     }
 
     onMounted(() => {
-        drawCanvas(canvasRef, props.level);
+        // 先加载图片，加载完后再绘制
+        preloadImages(() => {
+            drawCanvas(canvasRef, props.level, props.mapData);
+        });
     })
 
-    watch(() => props.level, (newLevel) => {
-        drawCanvas(canvasRef, newLevel);
-    })
+    watch(() => props.mapData, (newData) => {
+        drawCanvas(canvasRef, props.level, newData);
+    }, { deep: true })
 </script>
 
 <style scoped>

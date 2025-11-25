@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, inject, computed } from 'vue'
+import { ref, inject, computed, onMounted } from 'vue'
 import "@/assets/styles/MapEditorView.css"
 import MainView from '@/views/MainView.vue'
 import MapEditorCanvas from '@/components/MapEditorCanvas.vue'

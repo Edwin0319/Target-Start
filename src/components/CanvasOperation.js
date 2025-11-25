@@ -35,7 +35,7 @@ function preloadImages(callback) {
     }
 }
 
-// Canvas dimensions and properties
+// properties
 import { ref } from 'vue';
 const element_volume = ref(50);
 const vertical_quantity = ref(13);
@@ -43,7 +43,7 @@ const horizontal_quantity = ref(24);
 const canvas_width = horizontal_quantity.value * element_volume.value;
 const canvas_height = vertical_quantity.value * element_volume.value;
 
-function drawCanvas(canvasRef, level){
+function drawCanvas(canvasRef, level, mapData){
     if (!canvasRef.value) return;
     const canvas = canvasRef.value;
     const ctx = canvas.getContext('2d');
@@ -58,8 +58,33 @@ function drawCanvas(canvasRef, level){
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     // 绘制网格
     drawGrid(ctx, canvas.width, canvas.height);
+    // 根据 mapData 绘制元素
+    if (mapData && mapData.length > 0) {
+        drawMapElements(ctx, mapData);
+    }
     
     console.log(`Canvas redrawn for Level ${level}`);
+}
+
+function drawMapElements(ctx, mapData) {
+    const cellSize = element_volume.value;
+    
+    for (let row = 0; row < mapData.length; row++) {
+        for (let col = 0; col < mapData[row].length; col++) {
+            const elementId = mapData[row][col];
+            
+            // 如果 ID 在 imageMap 中存在 (非0)
+            if (imageMap[elementId]) {
+                ctx.drawImage(
+                    imageMap[elementId], 
+                    col * cellSize, 
+                    row * cellSize, 
+                    cellSize, 
+                    cellSize
+                );
+            }
+        }
+    }
 }
 
 function drawGrid(ctx, width, height) {
@@ -97,4 +122,4 @@ function handleMouseMove(event, canvasRef) {
 }
 
 
-export { drawCanvas, handleMouseMove, element_volume, vertical_quantity, horizontal_quantity, canvas_width, canvas_height };
+export { drawCanvas, handleMouseMove, preloadImages, element_volume, vertical_quantity, horizontal_quantity, canvas_width, canvas_height };
