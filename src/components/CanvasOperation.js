@@ -43,12 +43,16 @@ const horizontal_quantity = ref(24);
 const canvas_width = horizontal_quantity.value * element_volume.value;
 const canvas_height = vertical_quantity.value * element_volume.value;
 
-function drawCanvas(canvasRef, level, mapData){
+// canvasRef Canvas 引用
+// level 当前关卡
+// mapData 地图数据
+// preview 预览对象 { col, row, toolId }
+function drawCanvas(canvasRef, level, mapData, preview=null){
     if (!canvasRef.value) return;
     const canvas = canvasRef.value;
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas_width;
-    canvas.height = canvas_height;
+    if (canvas.width !== canvas_width) canvas.width = canvas_width;
+    if (canvas.height !== canvas_height) canvas.height = canvas_height;
     
     // 清空画布
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -62,8 +66,36 @@ function drawCanvas(canvasRef, level, mapData){
     if (mapData && mapData.length > 0) {
         drawMapElements(ctx, mapData);
     }
+    // 绘制鼠标预览
+    if (preview && preview.col >= 0 && preview.row >= 0) {
+        drawPreview(ctx, preview);
+    }
     
     console.log(`Canvas redrawn for Level ${level}`);
+}
+
+// 绘制预览效果
+function drawPreview(ctx, preview) {
+    const size = element_volume.value;
+    const x = preview.col * size;
+    const y = preview.row * size;
+
+    if (preview.toolId === 'remove') {
+        // 删除工具：红色高亮 
+        ctx.save();
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, size, size);
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+        ctx.fillRect(x, y, size, size);
+        ctx.restore();
+    } else if (imageMap[preview.toolId]) {
+        // 放置工具：半透明预览
+        ctx.save();
+        ctx.globalAlpha = 0.5; // 半透明
+        ctx.drawImage(imageMap[preview.toolId], x, y, size, size);
+        ctx.restore();
+    }
 }
 
 function drawMapElements(ctx, mapData) {
@@ -118,6 +150,10 @@ function handleMouseMove(event, canvasRef) {
 
     const col = Math.floor(x / element_volume.value);
     const row = Math.floor(y / element_volume.value);
+    // 边界检查
+    if (col < 0 || col >= horizontal_quantity.value || row < 0 || row >= vertical_quantity.value) {
+        return null;
+    }
     return {x, y, col, row};
 }
 
