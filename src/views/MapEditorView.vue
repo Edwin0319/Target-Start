@@ -1,4 +1,12 @@
 <template>
+    <div v-if="caution" class="caution">
+        <div class="caution-info">
+            <p>Map changes are not saved.</p>
+            <p class="mg-b-m">Do you want to return?</p>
+            <button @click="caution = false" class="btn mg-r-m">No</button>
+            <button @click="switchView(MainView)" class="btn">Yes</button>
+        </div>
+    </div>
     <div class="menu-container">
         <img src="@/assets/images/menu.png" class="menu" :class="{ 'menu-open': isMenuOpen }" @click="toggleMenu"/>
         <div class="menu-options" :class="{ 'menu-options-active': isMenuOpen }">
@@ -68,6 +76,7 @@ const isMenuOpen = ref(false)
 const activeLevel = ref(1) // 默认激活第一关
 const switchView = inject('switchView')
 const totalLevels = inject('totalLevels')
+const caution = ref(false)
 
 // level地图数据状态
 const maps = ref(Array(totalLevels).fill(null))
@@ -102,7 +111,7 @@ function switchLevel(level) {
 }
 
 function goHome() {
-    switchView(MainView)
+    caution.value = true
     isMenuOpen.value = false
 }
 
