@@ -22,7 +22,7 @@
 
 <script setup>
     import { ref, inject, onMounted, watch } from 'vue'
-    import { drawCanvas, handleMouseMove, preloadImages } from '@/components/CanvasOperation.js'
+    import { drawCanvas, handleMouseMove, preloadImages, checkPlacementValidity } from '@/components/CanvasOperation.js'
     const props = defineProps({
         level: {
             type: Number,
@@ -43,50 +43,14 @@
     const mousePos = ref({ x: -1, y: -1, col: -1, row: -1 })
     const currentValid = ref(true)
 
-    function checkPlacementValidity(row, col, toolId){
-        if (!toolId) return false;
-        if (toolId === 'remove') return true; // 删除工具总是有效
-        const rows = props.mapData.length;
-        const cols = props.mapData[0].length;
-
-        // 边界与占用检查辅助函数
-        const isOccupied = (r, c) => {
-            if (r < 0 || r >= rows || c < 0 || c >= cols) return true; // 超出边界视为被占用
-            if(props.mapData[r][c-1] === 6 || props.mapData[r][c+1] === 6) return true;
-            return props.mapData[r][c] !== 0;
-        };
-
-        if (toolId === 6) { 
-            // 移动平台 (ID 6): 检查 左(col-1), 中(col), 右(col+1)
-            if (col - 1 < 0 || col + 1 >= cols) return false;
-            
-            if (isOccupied(row, col-1) || isOccupied(row, col) || isOccupied(row, col+1)) {
-                return false;
-            }
-        } 
-        // 星星数量限制 (ID 2)
-        else if (toolId === 2) {
-            let starCount = 0;
-            for(let r = 0; r < rows; r++) {
-                for(let c = 0; c < cols; c++) {
-                    if (props.mapData[r][c] === 2) starCount++;
-                }
-            }
-            if (starCount >= 3 || isOccupied(row, col)) return false;
-        }
-        else {
-            // 普通物品
-            if (isOccupied(row, col)) return false;
-        }
-        return true;
-    }
+    
 
     function onMouseMove(event){
         isHovering.value = true;
         const pos = handleMouseMove(event, canvasRef);
         if (pos) {
             // 计算当前位置是否有效
-            const isValid = checkPlacementValidity(pos.row, pos.col, props.activeTool);
+            const isValid = checkPlacementValidity(pos.row, pos.col, props.activeTool, props.mapData);
             currentValid.value = isValid;
 
             mousePos.value = pos;
@@ -138,7 +102,7 @@
 
     // 监听 mapData 变化，重新绘制
     watch(() => props.mapData, (newData) => {
-        const isValid = isHovering.value ? checkPlacementValidity(mousePos.value.row, mousePos.value.col, props.activeTool) : true;
+        const isValid = isHovering.value ? checkPlacementValidity(mousePos.value.row, mousePos.value.col, props.activeTool, newData) : true;
         currentValid.value = isValid;
 
         // 如果鼠标正在悬停，保持预览

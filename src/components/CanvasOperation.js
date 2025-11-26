@@ -182,5 +182,57 @@ function handleMouseMove(event, canvasRef) {
     return {x, y, col, row};
 }
 
+ // 边界与占用检查辅助函数
+function isOccupied(r, c, mapData) {
+    const rows = mapData.length;
+    const cols = mapData[0].length;
+    if (r < 0 || r >= rows || c < 0 || c >= cols) return true; // 超出边界视为被占用
+    if(mapData[r][c-1] && mapData[r][c-1] === 6 || mapData[r][c+1] && mapData[r][c+1] === 6) return true;
+    return mapData[r][c] !== 0;
+}
 
-export { drawCanvas, handleMouseMove, preloadImages, element_volume, vertical_quantity, horizontal_quantity, canvas_width, canvas_height };
+function checkPlacementValidity(row, col, toolId, mapData){
+    // toolId 为 null
+    if (!toolId) return false;
+    if (toolId === 'remove') return true; // 删除工具总是有效
+    const rows = mapData.length;
+    const cols = mapData[0].length;
+
+    if (toolId === 6) { 
+        // 移动平台 (ID 6): 检查 左(col-1), 中(col), 右(col+1)
+        if (col - 1 < 0 || col + 1 >= cols) return false;
+        
+        if (isOccupied(row, col-1, mapData) || isOccupied(row, col, mapData) || isOccupied(row, col+1, mapData)) {
+            return false;
+        }
+    } 
+    // 星星数量限制 (ID 2)
+    else if (toolId === 2) {
+        let starCount = 0;
+        for(let r = 0; r < rows; r++) {
+            for(let c = 0; c < cols; c++) {
+                if (mapData[r][c] === 2) starCount++;
+            }
+        }
+        if (starCount >= 3 || isOccupied(row, col, mapData)) return false;
+    }
+    else {
+        // 普通物品
+        if (isOccupied(row, col, mapData)) return false;
+    }
+    return true;
+}
+
+
+export { 
+    drawCanvas, 
+    handleMouseMove,
+    preloadImages, 
+    checkPlacementValidity, 
+    isOccupied,
+    element_volume, 
+    vertical_quantity, 
+    horizontal_quantity, 
+    canvas_width, 
+    canvas_height 
+};
