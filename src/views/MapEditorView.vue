@@ -1,12 +1,31 @@
 <template>
-    <div v-if="caution" class="caution">
-        <div class="caution-info">
-            <p>Map changes are not saved.</p>
-            <p class="mg-b-m">Do you want to return?</p>
-            <button @click="caution = false" class="btn mg-r-m">No</button>
+    <popUpWindow v-model:caution="getHomeFlag">
+        <template v-slot:info>
+            <p class="info-text">Map changes are not saved.</p>
+            <p class="info-text">Do you want to return?</p>
+        </template>
+        <template v-slot:button>
+            <button @click="getHomeFlag = false" class="btn mg-r-m">No</button>
             <button @click="switchView(MainView)" class="btn">Yes</button>
-        </div>
-    </div>
+        </template>
+    </popUpWindow>
+    <popUpWindow v-model:caution="checkSpawnFlag">
+        <template v-slot:info>
+            <p class="info-text">Please place a Spawn Point first in each level!</p>
+        </template>
+        <template v-slot:button>
+            <button @click="checkSpawnFlag = false" class="btn">OK</button>
+        </template>
+    </popUpWindow>
+    <popUpWindow v-model:caution="checkStarFlag">
+        <template v-slot:info>
+            <p class="info-text">Please place at least one Star in each level!</p>
+        </template>
+        <template v-slot:button>
+            <button @click="checkStarFlag = false" class="btn">OK</button>
+        </template>
+    </popUpWindow>
+
     <div class="menu-container">
         <img src="@/assets/images/menu.png" class="menu" :class="{ 'menu-open': isMenuOpen }" @click="toggleMenu"/>
         <div class="menu-options" :class="{ 'menu-options-active': isMenuOpen }">
@@ -63,6 +82,7 @@ import "@/assets/styles/MapEditorView.css"
 import MainView from '@/views/MainView.vue'
 import MapEditorCanvas from '@/components/MapEditorCanvas.vue'
 import GameView from '@/views/GameView.vue'
+import popUpWindow from '@/components/popUpWindow.vue'
 import { element_volume, vertical_quantity, horizontal_quantity, canvas_width, canvas_height } from '@/components/CanvasOperation.js'
 
 import spawnImg from '@/assets/images/spawn-point.svg'
@@ -77,7 +97,9 @@ const isMenuOpen = ref(false)
 const activeLevel = ref(1) // 默认激活第一关
 const switchView = inject('switchView')
 const totalLevels = inject('totalLevels')
-const caution = ref(false)
+const getHomeFlag = ref(false)
+const checkSpawnFlag = ref(false)
+const checkStarFlag = ref(false)
 const globalMaps = inject('globalMaps')
 // 当前选中的工具ID
 const currentToolId = ref(null)
@@ -110,7 +132,7 @@ function switchLevel(level) {
 }
 
 function goHome() {
-    caution.value = true
+    getHomeFlag.value = true
     isMenuOpen.value = false
 }
 
@@ -142,20 +164,32 @@ function handleUpdateTile({ row, col, toolId }) {
 }
 
 function playDemo() {
-    // 1. 简单的合法性检查 (可选)：必须有出生点 (ID: 1) 才能开始
-    // 文档要求：至少一个 Start (Spawn Point) 和一个 Star 
-    // 这里为了方便调试，只检查是否有 Spawn Point，或者直接跳转
-    const hasSpawn = currentMapData.value.some(row => row.includes(1));
-    if (!hasSpawn) {
-        alert("Please place a Spawn Point (Character) first!");
+    // 必须有出生点才能开始
+    let hasSpawn = 0;
+    let havingStar = true;
+    globalMaps.value.forEach((map, index) => {
+        if(index == 0) return;
+        let levelHasStar = false;
+        console.log("checking map: ", map);
+        map.forEach(row => {
+            if(row.includes(1)){
+                hasSpawn += 1
+            }
+            if(row.includes(2)){
+                levelHasStar = true;
+            }
+        })
+        havingStar = havingStar && levelHasStar;
+    })
+    if (hasSpawn != 3) {
+        checkSpawnFlag.value = true;
         return;
     }
-    
+    if (!havingStar) {
+        checkStarFlag.value = true;
+        return;
+    }
 
-    // 2. 跳转到游戏页面
-    // 注意：目前的 GameView 默认从第1关开始。
-    // 如果想要直接测试当前编辑的关卡，可能需要修改 GameView 来接收参数，
-    // 或者利用全局状态。但在当前简单的架构下，直接跳转即可。
     switchView(GameView);
 }
 

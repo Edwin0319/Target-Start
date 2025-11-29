@@ -80,31 +80,3 @@
     border: 2px solid #333;
     border-radius: 4px;
 }
-
-.caution {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1001;
-}
-
-.caution-info {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #ccc;
-    padding: 2.2rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    z-index: 1002;
-}
-
-.caution-info p{
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.6rem;
-}

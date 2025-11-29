@@ -1,12 +1,12 @@
 <template>
 <div v-if="props.caution" class="caution">
     <div class="caution-info">
-        <slot name="info" class="caution-info-text"></slot>
-        <!-- <p>Map changes are not saved.</p> -->
-        <!-- <p class="mg-b-m">Do you want to return?</p> -->
-        <slot name="button"></slot>
-        <!-- <button @click="props.caution = false" class="btn mg-r-m">No</button>
-        <button @click="switchView(MainView)" class="btn">Yes</button> -->
+        <div class="caution-info-text mg-b-m">
+        <slot name="info"></slot>
+        </div>
+        <div class="caution-btns">
+            <slot name="button"></slot>
+        </div>
     </div>
 </div>
 
@@ -47,8 +47,16 @@ const props = defineProps({
 }
 
 .caution-info-text{
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.6rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.caution-btns{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.1rem;
 }
 </style>
