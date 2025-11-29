@@ -1,5 +1,5 @@
 <template>
-    <popUpWindow v-model:caution="getHomeFlag">
+    <popUpWindow :caution="getHomeFlag">
         <template v-slot:info>
             <p class="info-text">The game has not been passed yet.</p>
             <p class="info-text">Do you want to return?</p>
@@ -9,7 +9,7 @@
             <button @click="switchView(MainView)" class="btn">Yes</button>
         </template>
     </popUpWindow>
-    <popUpWindow v-model:caution="gameOverFlag">
+    <popUpWindow :caution="gameOverFlag">
         <template v-slot:info>
             <p class="info-text">Game Over! You have lost all your HP.</p>
             <p class="info-text">The game will restart from Level 1.</p>
@@ -18,7 +18,7 @@
             <button @click="handleGameOverOK" class="btn">OK</button>
         </template>
     </popUpWindow>
-    <popUpWindow v-model:caution="finishFlag">
+    <popUpWindow :caution="finishFlag">
         <template v-slot:info>
             <p class="info-text">Congratulations! You have completed the game.</p>
         </template>
@@ -59,11 +59,9 @@
 import { ref, inject, onMounted, onUnmounted, computed } from 'vue'
 import MainView from '@/views/MainView.vue'
 import popUpWindow from '@/components/popUpWindow.vue'
-import { element_volume, horizontal_quantity, vertical_quantity, preloadImages } from '@/components/CanvasOperation.js'
+import { element_volume, horizontal_quantity, vertical_quantity, preloadImages, imageMap } from '@/components/CanvasOperation.js'
 // 导入图片资源用于绘制
-import starImg from '@/assets/images/star.svg'
-import baseImg from '@/assets/images/base-blocks.svg'
-import playerImg from '@/assets/images/spawn-point.svg' // 暂时用出生点图代替玩家，建议换成专用角色图
+import playerImgSrc from '@/assets/images/character.svg'
 
 const size = element_volume.value;
 const canvasWidth = horizontal_quantity.value * size;
@@ -91,12 +89,15 @@ const elapsedTime = ref(0)
 const timerInterval = ref(null)
 
 // 玩家物理属性
+const playerImg = new Image();
+playerImg.src = playerImgSrc;
 const player = ref({
     x: 0, y: 0,
     width: size * 0.8, height: size * 0.8, // 略小于格子以方便通过
     vx: 0, vy: 0,
     speed: 5, jumpStrength: -12,
-    grounded: false
+    grounded: false,
+    img: playerImg
 })
 // 重力
 const gravity = 0.6
@@ -325,18 +326,6 @@ function handleDeath() {
 }
 
 
-// --- 渲染循环 ---
-const imgs = {
-    2: new Image(), // Star
-    3: new Image(), // Base
-    4: new Image(), // Spring
-    5: new Image(), // Slope
-    6: new Image()  // Platform
-};
-// 简单的图片加载映射（实际项目中应复用 CanvasOperation 的资源）
-imgs[2].src = starImg;
-imgs[3].src = baseImg;
-
 function draw() {
     const ctx = gameCanvas.value.getContext('2d');
     
@@ -348,21 +337,20 @@ function draw() {
         for(let c=0; c<runtimeMap[r].length; c++){
             const id = runtimeMap[r][c];
             if (id === 0) continue;
-            
-            if (imgs[id] && imgs[id].src) {
-                ctx.drawImage(imgs[id], c*size, r*size, size, size);
+
+            if (imageMap[id] && imageMap[id].src) {
+                ctx.drawImage(imageMap[id], c*size, r*size, size, size);
             }
-            else {
-                // 没图的时候用色块代替，保证可玩性
-                ctx.fillStyle = id === 3 ? '#666' : 'orange';
-                ctx.fillRect(c*size, r*size, size, size);
-            }
+            // else {
+            //     // 没图的时候用色块代替，保证可玩性
+            //     ctx.fillStyle = id === 3 ? '#666' : 'orange';
+            //     ctx.fillRect(c*size, r*size, size, size);
+            // }
         }
     }
     
     // 2. 绘制玩家
-    ctx.fillStyle = '#3498db'; // 玩家颜色
-    ctx.fillRect(player.value.x, player.value.y, player.value.width, player.value.height);
+    ctx.drawImage(player.value.img, player.value.x, player.value.y, player.value.width, player.value.height);
 }
 
 function gameLoop() {
@@ -427,11 +415,11 @@ onMounted(() => {
     window.addEventListener('keyup', handleKeyup);
     
     // 预加载图片后开始
-    preloadImages(() => {
+    preloadImages().then(() => {
+        console.log("Images preloaded in GameView.");
         initLevel(currentLevel.value);
     });
-
-})
+});
 
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeydown);

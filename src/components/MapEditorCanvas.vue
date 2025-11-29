@@ -23,6 +23,7 @@
 <script setup>
     import { ref, inject, onMounted, watch } from 'vue'
     import { drawCanvas, handleMouseMove, preloadImages, checkPlacementValidity } from '@/components/CanvasOperation.js'
+
     const props = defineProps({
         level: {
             type: Number,
@@ -93,11 +94,11 @@
     }
 
 
-    onMounted(() => {
+    onMounted(async () => {
         // 先加载图片，加载完后再绘制
-        preloadImages(() => {
-            drawCanvas(canvasRef, props.level, props.mapData);
-        });
+        await preloadImages();
+        drawCanvas(canvasRef, props.level, props.mapData);
+
     })
 
     // 监听 mapData 变化，重新绘制

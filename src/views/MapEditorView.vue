@@ -1,5 +1,5 @@
 <template>
-    <popUpWindow v-model:caution="getHomeFlag">
+    <popUpWindow :caution="getHomeFlag">
         <template v-slot:info>
             <p class="info-text">Map changes are not saved.</p>
             <p class="info-text">Do you want to return?</p>
@@ -9,7 +9,7 @@
             <button @click="switchView(MainView)" class="btn">Yes</button>
         </template>
     </popUpWindow>
-    <popUpWindow v-model:caution="checkSpawnFlag">
+    <popUpWindow :caution="checkSpawnFlag">
         <template v-slot:info>
             <p class="info-text">Please place a Spawn Point first in each level!</p>
         </template>
@@ -17,7 +17,7 @@
             <button @click="checkSpawnFlag = false" class="btn">OK</button>
         </template>
     </popUpWindow>
-    <popUpWindow v-model:caution="checkStarFlag">
+    <popUpWindow :caution="checkStarFlag">
         <template v-slot:info>
             <p class="info-text">Please place at least one Star in each level!</p>
         </template>

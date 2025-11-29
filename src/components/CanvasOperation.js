@@ -7,7 +7,7 @@ import slopedBlockImg from '@/assets/images/sloped-blocks.svg';
 import movingPlatformImg from '@/assets/images/moving-platform.svg';
 
 // 建立 ID 到图片对象的映射
-const imageMap = {};
+export const imageMap = {};
 const imageSources = {
     1: spawnPointImg,
     2: starImg,
@@ -18,22 +18,27 @@ const imageSources = {
 };
 
 // 预加载图片函数
-function preloadImages(callback) {
-    let loadedCount = 0;
-    const totalImages = Object.keys(imageSources).length;
+function preloadImages() {
+    return new Promise((resolve, reject) => {
+        let loadedCount = 0;
+        const totalImages = Object.keys(imageSources).length;
 
-    for (const [id, src] of Object.entries(imageSources)) {
-        const img = new Image();
-        img.src = src;
-        img.onload = () => {
-            loadedCount++;
-            if (loadedCount === totalImages && callback) {
-                callback();
-            }
-        };
-        imageMap[id] = img;
-    }
+        for (const [id, src] of Object.entries(imageSources)) {
+            const img = new Image();
+            img.src = src;
+            // 图片加载完成回调
+            img.onload = () => {
+                loadedCount++;
+                if (loadedCount === totalImages) {
+                    resolve();
+                }
+            };
+            imageMap[id] = img;
+        }
+    });
+
 }
+
 
 // properties
 import { ref } from 'vue';
@@ -234,5 +239,5 @@ export {
     vertical_quantity, 
     horizontal_quantity, 
     canvas_width, 
-    canvas_height 
+    canvas_height
 };
