@@ -15,7 +15,7 @@
             <p class="info-text">The game will restart from Level 1.</p>
         </template>
         <template v-slot:button>
-            <button @click="gameOverFlag = false" class="btn">OK</button>
+            <button @click="handleGameOverOK" class="btn">OK</button>
         </template>
     </popUpWindow>
 
@@ -130,6 +130,14 @@ function stopTimer() {
 
 // --- 游戏初始化 ---
 function initLevel(level) {
+    // 0. 停止之前的游戏循环和计时器
+
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    stopTimer();
+    
     // 1. 深拷贝地图数据
     const sourceMap = globalMaps.value[level];
     runtimeMap = JSON.parse(JSON.stringify(sourceMap));
@@ -287,11 +295,15 @@ function handleDeath() {
         }
     }
     else {
-        // 游戏结束，重置游戏
+        // 游戏结束，显示游戏结束对话框
+        // 停止当前游戏循环
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        stopTimer();
         gameOverFlag.value = true;
-        stopTimer();  
-        currentLevel.value = 1;
-        initLevel(1);
+        // 不在这里立即重置游戏，等待用户点击确认按钮
     }
 }
 
@@ -371,6 +383,19 @@ function nextLevel() {
     }
 }
 
+function handleGameOverOK() {
+    gameOverFlag.value = false;
+    // 确保完全停止所有游戏循环
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    stopTimer();
+    // 重新初始化游戏
+    currentLevel.value = 1;
+    initLevel(1);
+}
+
 onMounted(() => {
     window.addEventListener('keydown', handleKeydown);
     window.addEventListener('keyup', handleKeyup);
@@ -385,7 +410,10 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeydown);
     window.removeEventListener('keyup', handleKeyup);
-    cancelAnimationFrame(animationFrameId);
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
     stopTimer();
 })
 </script>
