@@ -63,7 +63,6 @@ const canvasWidth = horizontal_quantity.value * size;
 const canvasHeight = vertical_quantity.value * size;
 console.log("Canvas Size:", canvasWidth, canvasHeight);
 const getHomeFlag = ref(false)
-const gameOverFlag = ref(false)
 
 
 const switchView = inject('switchView')
@@ -76,6 +75,7 @@ const hitPoints = ref(3)
 const isPaused = ref(false)
 const isGameWon = ref(false)
 const gameCanvas = ref(null)
+const gameOverFlag = ref(false)
 
 // 计时器状态
 const startTime = ref(0)
@@ -379,6 +379,7 @@ onMounted(() => {
     preloadImages(() => {
         initLevel(currentLevel.value);
     });
+
 })
 
 onUnmounted(() => {
