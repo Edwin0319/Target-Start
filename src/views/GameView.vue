@@ -18,7 +18,14 @@
             <button @click="handleGameOverOK" class="btn">OK</button>
         </template>
     </popUpWindow>
-
+    <popUpWindow v-model:caution="finishFlag">
+        <template v-slot:info>
+            <p class="info-text">Congratulations! You have completed the game.</p>
+        </template>
+        <template v-slot:button>
+            <button @click="finish" class="btn">OK</button>
+        </template>
+    </popUpWindow>
 
     <div class="game-container">
         <div class="hud">
@@ -76,6 +83,7 @@ const isPaused = ref(false)
 const isGameWon = ref(false)
 const gameCanvas = ref(null)
 const gameOverFlag = ref(false)
+const finishFlag = ref(false)
 
 // 计时器状态
 const startTime = ref(0)
@@ -123,8 +131,6 @@ function startTimer() {
 }
 
 function stopTimer() {
-    startTime.value = 0;
-    elapsedTime.value = 0;
     clearInterval(timerInterval.value);
 }
 
@@ -166,13 +172,16 @@ function initLevel(level) {
     player.value.vy = 0;
     isGameWon.value = false;
     isPaused.value = false;
+
+    startTime.value = 0;
+    elapsedTime.value = 0;
     startTimer();
     gameLoop();
 }
 
 // --- 物理与碰撞逻辑 ---
 function updatePhysics() {
-    if (isPaused.value || isGameWon.value || gameOverFlag.value) return;
+    if (isPaused.value || isGameWon.value || gameOverFlag.value || finishFlag.value) return;
     // 1. 水平移动
     if (keys.a) player.value.vx -= 1;
     if (keys.d) player.value.vx += 1;
@@ -269,9 +278,17 @@ function collectStar(r, c) {
 }
 
 function handleWin() {
-    isGameWon.value = true;
     stopTimer();
-    // 胜利提示逻辑已通过 template 的 v-if="isGameWon" 实现
+    if(animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    if(currentLevel.value < totalLevels) {
+        isGameWon.value = true;
+    }
+    else {
+        finishFlag.value = true;
+    }
 }
 
 function handleDeath() {
@@ -376,11 +393,20 @@ function nextLevel() {
     if (currentLevel.value < totalLevels) {
         currentLevel.value++;
         initLevel(currentLevel.value);
-    } else {
-        alert("You finished all levels!"); 
-        // 这里应跳转到排行榜，暂时回主页
-        switchView(MainView);
     }
+}
+
+function finish() {
+    finishFlag.value = false;
+    // 确保完全停止所有游戏循环
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    stopTimer();
+
+    // 这里应跳转到排行榜，暂时回主页
+    switchView(MainView);
 }
 
 function handleGameOverOK() {
