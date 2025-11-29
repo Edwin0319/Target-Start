@@ -9,6 +9,17 @@
             <button @click="switchView(MainView)" class="btn">Yes</button>
         </template>
     </popUpWindow>
+    <popUpWindow v-model:caution="gameOverFlag">
+        <template v-slot:info>
+            <p class="info-text">Game Over! You have lost all your HP.</p>
+            <p class="info-text">The game will restart from Level 1.</p>
+        </template>
+        <template v-slot:button>
+            <button @click="gameOverFlag = false" class="btn">OK</button>
+        </template>
+    </popUpWindow>
+
+
     <div class="game-container">
         <div class="hud">
             <div class="hud-item">Level: {{ currentLevel }}</div>
@@ -47,10 +58,13 @@ import starImg from '@/assets/images/star.svg'
 import baseImg from '@/assets/images/base-blocks.svg'
 import playerImg from '@/assets/images/spawn-point.svg' // 暂时用出生点图代替玩家，建议换成专用角色图
 
-const canvasWidth = horizontal_quantity.value * element_volume.value;
-const canvasHeight = vertical_quantity.value * element_volume.value;
+const size = element_volume.value;
+const canvasWidth = horizontal_quantity.value * size;
+const canvasHeight = vertical_quantity.value * size;
 console.log("Canvas Size:", canvasWidth, canvasHeight);
-let getHomeFlag = ref(false)
+const getHomeFlag = ref(false)
+const gameOverFlag = ref(false)
+
 
 const switchView = inject('switchView')
 const globalMaps = inject('globalMaps')
@@ -71,15 +85,15 @@ const timerInterval = ref(null)
 // 玩家物理属性
 const player = ref({
     x: 0, y: 0,
-    width: element_volume.value * 0.8, height: element_volume.value * 0.8, // 略小于格子(50px)以方便通过
+    width: size * 0.8, height: size * 0.8, // 略小于格子以方便通过
     vx: 0, vy: 0,
     speed: 5, jumpStrength: -12,
     grounded: false
 })
 // 重力
 const gravity = 0.6
-// 摩擦力
-const friction = 0.8
+// 摩擦力 (0~1)
+const friction = 0.2
 
 // 输入状态
 const keys = { w: false, a: false, d: false }
@@ -109,6 +123,8 @@ function startTimer() {
 }
 
 function stopTimer() {
+    startTime.value = 0;
+    elapsedTime.value = 0;
     clearInterval(timerInterval.value);
 }
 
@@ -126,9 +142,9 @@ function initLevel(level) {
     for(let r=0; r<runtimeMap.length; r++){
         for(let c=0; c<runtimeMap[r].length; c++){
             const id = runtimeMap[r][c];
-            if(id === 1) { // Spawn Point [cite: 92]
-                player.value.x = c * 50 + 5; // 居中一点
-                player.value.y = r * 50 + 5;
+            if(id === 1) { // Spawn Point
+                player.value.x = c * size + 5; // 居中一点
+                player.value.y = r * size + 5;
                 spawnFound = true;
                 runtimeMap[r][c] = 0; // 游戏中不显示出生点图标
             } else if (id === 2) { // Star
@@ -137,29 +153,23 @@ function initLevel(level) {
         }
     }
 
-    if(!spawnFound) {
-        // 默认位置
-        player.value.x = 50; player.value.y = 50; 
-    }
-    
+    hitPoints.value = 3;
     player.value.vx = 0;
     player.value.vy = 0;
     isGameWon.value = false;
     isPaused.value = false;
-    elapsedTime.value = 0;
     startTimer();
     gameLoop();
 }
 
-// --- 物理与碰撞逻辑 [cite: 101] ---
+// --- 物理与碰撞逻辑 ---
 function updatePhysics() {
-    if (isPaused.value || isGameWon.value) return;
-
+    if (isPaused.value || isGameWon.value || gameOverFlag.value) return;
     // 1. 水平移动
     if (keys.a) player.value.vx -= 1;
     if (keys.d) player.value.vx += 1;
     
-    player.value.vx *= friction; // 摩擦力
+    player.value.vx *= (1-friction); // 摩擦力
     player.value.x += player.value.vx;
     checkCollision('x'); // X轴碰撞检测
 
@@ -176,14 +186,13 @@ function updatePhysics() {
     }
     
     // 4. 边界检查（掉出地图）
-    if (player.value.y > 700) {
+    if (player.value.y > canvasHeight + 2 * size) {
         handleDeath();
     }
 }
 
 // 简单的 AABB 碰撞检测
 function checkCollision(axis) {
-    const size = 50; // 格子大小
     // 计算玩家占据的网格范围
     const leftCol = Math.floor(player.value.x / size);
     const rightCol = Math.floor((player.value.x + player.value.width) / size);
@@ -212,7 +221,8 @@ function checkCollision(axis) {
                         player.value.x = (c + 1) * size + 0.1;
                         player.value.vx = 0;
                     }
-                } else {
+                }
+                else if (axis === 'y') {
                     // 向下撞（落地）
                     if (player.value.vy > 0) {
                         player.value.y = r * size - player.value.height - 0.1;
@@ -228,7 +238,7 @@ function checkCollision(axis) {
             }
 
             // --- 道具交互 ---
-            // ID 2: Star [cite: 23, 24]
+            // ID 2: Star
             if (tileId === 2) {
                 collectStar(r, c);
             }
@@ -266,23 +276,25 @@ function handleDeath() {
         for(let r=0; r<sourceMap.length; r++){
             for(let c=0; c<sourceMap[r].length; c++){
                 if(sourceMap[r][c] === 1) {
-                    player.value.x = c * 50 + 5;
-                    player.value.y = r * 50 + 5;
+                    console.log("Spawn Point found at:", r, c);
+                    player.value.x = c * size + 5;
+                    player.value.y = r * size + 5;
                     player.value.vx = 0; 
                     player.value.vy = 0;
                     return;
                 }
             }
         }
-        // 如果没找到出生点（被删了），回原点
-        player.value.x = 50; player.value.y = 50; player.value.vy=0;
-    } else {
-        alert("Game Over! Retrying Level 1...");
+    }
+    else {
+        // 游戏结束，重置游戏
+        gameOverFlag.value = true;
+        stopTimer();  
         currentLevel.value = 1;
-        hitPoints.value = 3;
         initLevel(1);
     }
 }
+
 
 // --- 渲染循环 ---
 const imgs = {
@@ -298,11 +310,10 @@ imgs[3].src = baseImg;
 
 function draw() {
     const ctx = gameCanvas.value.getContext('2d');
-    const size = 50;
     
     // 清空
-    ctx.clearRect(0, 0, 1200, 650);
-    
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
     // 1. 绘制地图
     for(let r=0; r<runtimeMap.length; r++){
         for(let c=0; c<runtimeMap[r].length; c++){
@@ -311,7 +322,8 @@ function draw() {
             
             if (imgs[id] && imgs[id].src) {
                 ctx.drawImage(imgs[id], c*size, r*size, size, size);
-            } else {
+            }
+            else {
                 // 没图的时候用色块代替，保证可玩性
                 ctx.fillStyle = id === 3 ? '#666' : 'orange';
                 ctx.fillRect(c*size, r*size, size, size);
@@ -319,7 +331,7 @@ function draw() {
         }
     }
     
-    // 2. 绘制玩家 [cite: 19]
+    // 2. 绘制玩家
     ctx.fillStyle = '#3498db'; // 玩家颜色
     ctx.fillRect(player.value.x, player.value.y, player.value.width, player.value.height);
 }
