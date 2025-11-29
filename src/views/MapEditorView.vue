@@ -29,7 +29,7 @@
 
     <div class="main mg-b-m">
         <div class="sidebar">
-            <button class="btn">Play Demo</button>
+            <button class="btn" @click="playDemo">Play Demo</button>
             <ul class="tool-list">
                 <li
                     v-for="tool in tools"
@@ -62,6 +62,7 @@ import { ref, inject, computed, onMounted } from 'vue'
 import "@/assets/styles/MapEditorView.css"
 import MainView from '@/views/MainView.vue'
 import MapEditorCanvas from '@/components/MapEditorCanvas.vue'
+import GameView from '@/views/GameView.vue'
 import { element_volume, vertical_quantity, horizontal_quantity, canvas_width, canvas_height } from '@/components/CanvasOperation.js'
 
 import spawnImg from '@/assets/images/spawn-point.svg'
@@ -77,14 +78,12 @@ const activeLevel = ref(1) // 默认激活第一关
 const switchView = inject('switchView')
 const totalLevels = inject('totalLevels')
 const caution = ref(false)
-
-// level地图数据状态
-const maps = ref(Array(totalLevels).fill(null))
+const globalMaps = inject('globalMaps')
 // 当前选中的工具ID
 const currentToolId = ref(null)
 
 // 计算属性：获取当前关卡的地图数据
-const currentMapData = computed(() => maps.value[activeLevel.value]);
+const currentMapData = computed(() => globalMaps.value[activeLevel.value]);
 
 // 工具列表配置
 const tools = [
@@ -139,34 +138,27 @@ function handleUpdateTile({ row, col, toolId }) {
     }
     
     // 触发更新
-    maps.value = [...maps.value];
+    globalMaps.value = [...globalMaps.value];
 }
 
-// 初始化地图数据的函数
-function initializeMapData() {
-    const col = horizontal_quantity.value;
-    const row = vertical_quantity.value;
-
-    for(let level = 1; level <= totalLevels; level++) {
-        const levelMap = [];
-        for(let r = 0; r < row; r++){
-            const rowData = [];
-            for(let c = 0; c < col; c++){
-                if(r === row - 1){
-                    rowData.push(3); // 最底行放置地面块
-                } else {
-                    rowData.push(0); // 其他位置为空
-                }
-            }
-            levelMap.push(rowData);
-        }
-        maps.value[level] = levelMap;
+function playDemo() {
+    // 1. 简单的合法性检查 (可选)：必须有出生点 (ID: 1) 才能开始
+    // 文档要求：至少一个 Start (Spawn Point) 和一个 Star 
+    // 这里为了方便调试，只检查是否有 Spawn Point，或者直接跳转
+    const hasSpawn = currentMapData.value.some(row => row.includes(1));
+    if (!hasSpawn) {
+        alert("Please place a Spawn Point (Character) first!");
+        return;
     }
+    
+
+    // 2. 跳转到游戏页面
+    // 注意：目前的 GameView 默认从第1关开始。
+    // 如果想要直接测试当前编辑的关卡，可能需要修改 GameView 来接收参数，
+    // 或者利用全局状态。但在当前简单的架构下，直接跳转即可。
+    switchView(GameView);
 }
 
-onMounted(() => {
-    initializeMapData();
-})
 
 </script>
 
