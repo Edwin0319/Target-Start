@@ -1,4 +1,14 @@
 <template>
+    <popUpWindow v-model:caution="getHomeFlag">
+        <template v-slot:info>
+            <p class="info-text">The game has not been passed yet.</p>
+            <p class="info-text">Do you want to return?</p>
+        </template>
+        <template v-slot:button>
+            <button @click="getHomeFlag = false" class="btn mg-r-m">No</button>
+            <button @click="switchView(MainView)" class="btn">Yes</button>
+        </template>
+    </popUpWindow>
     <div class="game-container">
         <div class="hud">
             <div class="hud-item">Level: {{ currentLevel }}</div>
@@ -7,8 +17,8 @@
         </div>
 
         <div class="game-area">
-            <canvas ref="gameCanvas" width="1200" height="650"></canvas>
-            
+            <canvas ref="gameCanvas" :width="canvasWidth" :height="canvasHeight"></canvas>
+
             <div v-if="isGameWon" class="overlay">
                 <h2>Level Complete!</h2>
                 <button class="btn" @click="nextLevel">Next Level</button>
@@ -21,7 +31,7 @@
         </div>
 
         <div class="controls">
-            <button class="btn" @click="confirmHome">Home</button>
+            <button class="btn" @click="getHomeFlag=true">Home</button>
             <button class="btn" @click="togglePause">{{ isPaused ? 'Resume' : 'Pause' }}</button>
         </div>
     </div>
@@ -30,11 +40,17 @@
 <script setup>
 import { ref, inject, onMounted, onUnmounted, computed } from 'vue'
 import MainView from '@/views/MainView.vue'
-import { element_volume, preloadImages } from '@/components/CanvasOperation.js'
+import popUpWindow from '@/components/popUpWindow.vue'
+import { element_volume, horizontal_quantity, vertical_quantity, preloadImages } from '@/components/CanvasOperation.js'
 // 导入图片资源用于绘制
 import starImg from '@/assets/images/star.svg'
 import baseImg from '@/assets/images/base-blocks.svg'
 import playerImg from '@/assets/images/spawn-point.svg' // 暂时用出生点图代替玩家，建议换成专用角色图
+
+const canvasWidth = horizontal_quantity.value * element_volume.value;
+const canvasHeight = vertical_quantity.value * element_volume.value;
+console.log("Canvas Size:", canvasWidth, canvasHeight);
+let getHomeFlag = ref(false)
 
 const switchView = inject('switchView')
 const globalMaps = inject('globalMaps')
@@ -55,12 +71,14 @@ const timerInterval = ref(null)
 // 玩家物理属性
 const player = ref({
     x: 0, y: 0,
-    width: 40, height: 40, // 略小于格子(50px)以方便通过
+    width: element_volume.value * 0.8, height: element_volume.value * 0.8, // 略小于格子(50px)以方便通过
     vx: 0, vy: 0,
     speed: 5, jumpStrength: -12,
     grounded: false
 })
+// 重力
 const gravity = 0.6
+// 摩擦力
 const friction = 0.8
 
 // 输入状态
@@ -239,7 +257,7 @@ function handleWin() {
 }
 
 function handleDeath() {
-    // 扣除生命值 [cite: 95]
+    // 扣除生命值
     hitPoints.value--;
     if (hitPoints.value > 0) {
         // 重生逻辑：不仅重置位置，还要保持当前时间
@@ -329,11 +347,6 @@ function togglePause() {
     isPaused.value = !isPaused.value; 
 }
 
-function confirmHome() {
-    if(confirm("Do you want to return?")) { 
-        switchView(MainView);
-    }
-}
 
 function nextLevel() {
     if (currentLevel.value < totalLevels) {
