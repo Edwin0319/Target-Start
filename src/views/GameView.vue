@@ -82,6 +82,7 @@ const isGameWon = ref(false)
 const gameCanvas = ref(null)
 const gameOverFlag = ref(false)
 const finishFlag = ref(false)
+let platforms = [] // 移动平台列表
 
 // 计时器状态
 const startTime = ref(0)
@@ -95,7 +96,7 @@ const player = ref({
     x: 0, y: 0,
     width: size * 0.8, height: size * 0.8, // 略小于格子以方便通过
     vx: 0, vy: 0,
-    speed: 5, jumpStrength: -12,
+    speed: 0.5, jumpStrength: -12,
     grounded: false,
     img: playerImg
 })
@@ -162,8 +163,33 @@ function initLevel(level) {
                 player.value.y = r * size + 5;
                 spawnFound = true;
                 runtimeMap[r][c] = 0; // 游戏中不显示出生点图标
-            } else if (id === 2) { // Star
+            }
+            else if (id === 2) { // Star
                 totalStars++;
+            }
+            else if(id === 6){ // Moving Platform
+                // 初始化平台数据
+                const centerCol = c;
+                const leftMostCol = centerCol -1;
+                const p = {
+                    row: r,
+                    centerCol,
+                    x: leftMostCol * size,
+                    y: r * size,
+                    width: size,
+                    height: size,
+                    vx: player.value.speed * 0.5, // 初始速度
+                    xMin: (centerCol - 1) * size,
+                    xMax: (centerCol + 1) * size
+                };
+                platforms.push(p);
+
+                // 清除地图上的平台图标（游戏中不显示）
+                if(runtimeMap[r][centerCol - 1] !== undefined) runtimeMap[r][centerCol - 1] = 0;
+                if(runtimeMap[r][centerCol] !== undefined) runtimeMap[r][centerCol] = 0;
+                if(runtimeMap[r][centerCol + 1] !== undefined) runtimeMap[r][centerCol + 1] = 0;
+
+                c += 1; // 跳过后两个格子
             }
         }
     }
@@ -184,9 +210,9 @@ function initLevel(level) {
 function updatePhysics() {
     if (isPaused.value || isGameWon.value || gameOverFlag.value || finishFlag.value) return;
     // 1. 水平移动
-    if (keys.a) player.value.vx -= 1;
-    if (keys.d) player.value.vx += 1;
-    
+    if (keys.a) player.value.vx -= player.value.speed;
+    if (keys.d) player.value.vx += player.value.speed;
+
     player.value.vx *= (1-friction); // 摩擦力
     player.value.x += player.value.vx;
     checkCollision('x'); // X轴碰撞检测
@@ -209,14 +235,109 @@ function updatePhysics() {
     }
 }
 
+// 更新移动平台及玩家随平台移动逻辑
+function updatePlatforms(){
+    for(const p of platforms){
+        p.x += p.vx;
+        // 平台到达边界则反向
+        if(p.x < p.xMin){
+            p.x = p.xMin;
+            p.vx *= -1;
+        }
+        else if(p.x > p.xMax){
+            p.x = p.xMax;
+            p.vx *= -1;
+        }
+
+        // 检测平台是否撞到了玩家（推人逻辑）
+        if(player.value.groundedOnPlatform !== p){
+            const playerLeft = player.value.x;
+            const playerRight = player.value.x + player.value.width;
+            const playerTop = player.value.y;
+            const playerBottom = player.value.y + player.value.height;
+            
+            const platLeft = p.x;
+            const platRight = p.x + p.width;
+            const platTop = p.y;
+            const platBottom = p.y + p.height;
+
+            // AABB 碰撞检测
+            if (playerRight > platLeft && playerLeft < platRight && 
+                playerBottom > platTop && playerTop < platBottom) {
+                    player.value.x += p.vx; // 平台推动玩家
+                
+            }
+        }
+    }
+    // 检查玩家是否在某个平台上
+    if(player.value.grounded && player.value.groundedOnPlatform){
+        const plat = player.value.groundedOnPlatform;
+        player.value.x += plat.vx; // 玩家随平台移动
+    }
+}
+
 // 简单的 AABB 碰撞检测
 function checkCollision(axis) {
-    // 计算玩家占据的网格范围
-    const leftCol = Math.floor(player.value.x / size);
-    const rightCol = Math.floor((player.value.x + player.value.width) / size);
-    const topRow = Math.floor(player.value.y / size);
-    const bottomRow = Math.floor((player.value.y + player.value.height) / size);
+    // 记录上一步底部位置（用于判断是否是从上方落到平台）
+    const prevBottom = player.value.y - player.value.vy + player.value.height;
 
+    // 计算玩家占据的网格范围
+    const playerLeft = player.value.x;
+    const playerRight = player.value.x + player.value.width;
+    const playerTop = player.value.y;
+    const playerBottom = player.value.y + player.value.height;
+    const leftCol = Math.floor(playerLeft / size);
+    const rightCol = Math.floor((playerRight - 0.1) / size);
+    const topRow = Math.floor(playerTop / size);
+    const bottomRow = Math.floor((playerBottom - 0.1) / size);
+
+    // 平台碰撞处理
+    for(const p of platforms){
+        const platLeft = p.x;
+        const platRight = p.x + p.width;
+        const platTop = p.y;
+        const platBottom = p.y + p.height;
+
+        // Y轴碰撞
+        if (axis === 'y') {
+            if(player.value.vy > 0 && // 只在下落时检测
+                playerRight > platLeft && playerLeft < platRight &&
+                playerBottom >= platTop && prevBottom <= platTop) {
+
+                // 碰到平台顶部
+                player.value.y = platTop - player.value.height - 0.1;
+                player.value.vy = 0;
+                player.value.grounded = true;
+                player.value.groundedOnPlatform = p; // 记录当前站立的平台
+            }
+            else if(player.value.vy < 0 &&
+                (playerTop <= platBottom && (playerTop - player.value.vy) >= platBottom) &&
+                playerRight > platLeft && playerLeft < platRight) {
+
+                // 碰到平台底部
+                player.value.y = platBottom + 0.1;
+                player.value.vy = 0;
+            }
+            
+        }
+        else if(axis === 'x'){
+            if(playerRight > platLeft && playerLeft < platRight && 
+                playerBottom > platTop && playerTop < platBottom){
+                // 碰到平台侧面
+                if(player.value.vx > 0) {
+                    player.value.x = platLeft - player.value.width - 0.1;
+                    player.value.vx = 0;
+                }
+                else if(player.value.vx < 0) {
+                    player.value.x = platRight + 0.1;
+                    player.value.vx = 0;
+                }
+            }
+        }
+        if(!player.value.grounded && player.value.groundedOnPlatform){
+            player.value.groundedOnPlatform = null; // 离开平台     
+        }
+    }
     // 遍历玩家接触到的所有格子
     for (let r = topRow; r <= bottomRow; r++) {
         for (let c = leftCol; c <= rightCol; c++) {
@@ -336,16 +457,18 @@ function draw() {
     for(let r=0; r<runtimeMap.length; r++){
         for(let c=0; c<runtimeMap[r].length; c++){
             const id = runtimeMap[r][c];
-            if (id === 0) continue;
+            if (id === 0 || id === 6) continue;
 
             if (imageMap[id] && imageMap[id].src) {
                 ctx.drawImage(imageMap[id], c*size, r*size, size, size);
             }
-            // else {
-            //     // 没图的时候用色块代替，保证可玩性
-            //     ctx.fillStyle = id === 3 ? '#666' : 'orange';
-            //     ctx.fillRect(c*size, r*size, size, size);
-            // }
+
+        }
+    }
+
+    for (const p of platforms){
+        if(imageMap[6]){
+            ctx.drawImage(imageMap[6], p.x, p.y, p.width, p.height);
         }
     }
     
@@ -354,6 +477,7 @@ function draw() {
 }
 
 function gameLoop() {
+    updatePlatforms();   // 先更新平台并把玩家随平台移动（若在平台上）
     updatePhysics();
     draw();
     animationFrameId = requestAnimationFrame(gameLoop);
