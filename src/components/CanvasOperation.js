@@ -193,6 +193,9 @@ function isOccupied(r, c, mapData) {
     const cols = mapData[0].length;
     if (r < 0 || r >= rows || c < 0 || c >= cols) return true; // 超出边界视为被占用
     if(mapData[r][c-1] && mapData[r][c-1] === 6 || mapData[r][c+1] && mapData[r][c+1] === 6) return true;
+    if(mapData[r][c+1] && mapData[r][c+1] === 5 || 
+        r+1 <= rows && mapData[r+1][c+1] === 5 || 
+        r+1 <= rows && mapData[r+1][c] && mapData[r+1][c] === 5) return true;
     return mapData[r][c] !== 0;
 }
 
@@ -220,6 +223,14 @@ function checkPlacementValidity(row, col, toolId, mapData){
             }
         }
         if (starCount >= 3 || isOccupied(row, col, mapData)) return false;
+    }
+    else if(toolId === 5){
+        if(isOccupied(row, col, mapData)) return false;
+        if(mapData[row][col-1] && mapData[row][col-1] === 5 || 
+            row-1 >= 0 && mapData[row-1][col-1] === 5 || 
+            row-1 >= 0 && mapData[row-1][col] && mapData[row-1][col] === 5 ||
+            mapData[row][col-1] && mapData[row][col-1] === 5) return false;
+
     }
     else {
         // 普通物品
