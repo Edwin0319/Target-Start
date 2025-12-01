@@ -144,7 +144,7 @@ function initLevel(level) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
     }
-    platforms.value = [];
+    platforms = [];
     stopTimer();
     
     // 1. 深拷贝地图数据
@@ -336,6 +336,7 @@ function checkCollision(axis) {
                 else if(player.value.vx < 0) {
                     player.value.x = platRight + 0.1;
                     player.value.vx = 0;
+
                 }
             }
         }
@@ -409,8 +410,6 @@ function checkCollision(axis) {
                     }
                 }
                 else if(axis === 'x'){
-            
-                    
                     // 撞到斜坡右侧
                     if(player.value.vx < 0 && playerLeft <= tileRight && prevLeft >= tileRight){
                         player.value.x = tileRight + 0.1;
