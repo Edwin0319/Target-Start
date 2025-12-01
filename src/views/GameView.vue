@@ -144,6 +144,7 @@ function initLevel(level) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
     }
+    platforms.value = [];
     stopTimer();
     
     // 1. 深拷贝地图数据
@@ -199,6 +200,7 @@ function initLevel(level) {
     player.value.vy = 0;
     isGameWon.value = false;
     isPaused.value = false;
+    player.value.groundedOnPlatform = null;
 
     startTime.value = 0;
     elapsedTime.value = 0;
@@ -280,6 +282,9 @@ function updatePlatforms(){
 function checkCollision(axis) {
     // 记录上一步底部位置（用于判断是否是从上方落到平台）
     const prevBottom = player.value.y - player.value.vy + player.value.height;
+    const prevTop = player.value.y - player.value.vy;
+    const prevLeft = player.value.x - player.value.vx;
+    const prevRight = player.value.x + player.value.width - player.value.vx;
 
     // 计算玩家占据的网格范围
     const playerLeft = player.value.x;
@@ -311,7 +316,7 @@ function checkCollision(axis) {
                 player.value.groundedOnPlatform = p; // 记录当前站立的平台
             }
             else if(player.value.vy < 0 &&
-                (playerTop <= platBottom && (playerTop - player.value.vy) >= platBottom) &&
+                (playerTop <= platBottom && prevTop >= platBottom) &&
                 playerRight > platLeft && playerLeft < platRight) {
 
                 // 碰到平台底部
@@ -347,8 +352,7 @@ function checkCollision(axis) {
             const tileId = runtimeMap[r][c];
 
             // --- 实体碰撞 (墙壁) ---
-            // ID 3: Base, ID 6: Platform (简化为方块), ID 5: Slope (这里简化为方块)
-            if (tileId === 3 || tileId === 6 || tileId === 5) {
+            if (tileId === 3) {
                 if (axis === 'x') {
                     // 向右撞
                     if (player.value.vx > 0) {
@@ -374,6 +378,52 @@ function checkCollision(axis) {
                         player.value.vy = 0;
                     }
                 }
+            }
+
+
+            // --- 斜坡碰撞 (Sloped Block) ---
+            else if(tileId === 5){
+                const tileLeft = c * size;
+                const tileRight = (c + 1) * size;
+                const tileTop = r * size;
+                const tileBottom = (r + 1) * size;
+                
+                // 斜坡高度
+                let slopeY = tileBottom - (playerRight - tileLeft);
+                slopeY = Math.max(slopeY, tileTop);
+
+                if(axis === 'y'){
+                    // 从上方落到斜坡
+                    if(player.value.vy > 0 && playerBottom >= slopeY && prevBottom <= slopeY){
+                        player.value.y = slopeY - player.value.height - 0.1;
+                        player.value.vy = 0;
+                        player.value.grounded = true;
+                    }
+                    // 从下方碰到斜坡底部
+                    else if(player.value.vy < 0 && 
+                        playerTop < tileBottom &&
+                        prevTop >= tileBottom){
+
+                        player.value.y = tileBottom + 0.1;
+                        player.value.vy = 0;
+                    }
+                }
+                else if(axis === 'x'){
+            
+                    
+                    // 撞到斜坡右侧
+                    if(player.value.vx < 0 && playerLeft <= tileRight && prevLeft >= tileRight){
+                        player.value.x = tileRight + 0.1;
+                        player.value.vx = 0;
+                    }
+                    // 上下坡
+                    else if(playerRight > tileLeft && playerLeft < tileRight && player.value.grounded){
+                        player.value.y = slopeY - player.value.height - 0.1;
+                        
+                    }
+                }
+                
+                
             }
 
             // --- 道具交互 ---
