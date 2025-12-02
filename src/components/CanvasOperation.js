@@ -194,8 +194,8 @@ function isOccupied(r, c, mapData) {
     if (r < 0 || r >= rows || c < 0 || c >= cols) return true; // 超出边界视为被占用
     if(mapData[r][c-1] && mapData[r][c-1] === 6 || mapData[r][c+1] && mapData[r][c+1] === 6) return true;
     if(mapData[r][c+1] && mapData[r][c+1] === 5 || 
-        r+1 <= rows && mapData[r+1][c+1] === 5 || 
-        r+1 <= rows && mapData[r+1][c] && mapData[r+1][c] === 5) return true;
+        r+1 < rows && mapData[r+1][c+1] === 5 || 
+        r+1 < rows && mapData[r+1][c] && mapData[r+1][c] === 5) return true;
     return mapData[r][c] !== 0;
 }
 
