@@ -21,6 +21,9 @@
     <popUpWindow :caution="finishFlag">
         <template v-slot:info>
             <p class="info-text">Congratulations! You have completed the game.</p>
+            <p class="info-text">Level 1: {{ formatTime(levelTimes[0]) }}</p>
+            <p class="info-text">Level 2: {{ formatTime(levelTimes[1]) }}</p>
+            <p class="info-text">Level 3: {{ formatTime(levelTimes[2]) }}</p>
         </template>
         <template v-slot:button>
             <button @click="finish" class="btn">OK</button>
@@ -75,6 +78,7 @@ const switchView = inject('switchView')
 const globalMaps = inject('globalMaps')
 const totalLevels = inject('totalLevels')
 const passed = inject('passed')
+const levelTimes = inject('levelTimes')
 
 // 游戏状态
 const currentLevel = ref(1)
@@ -118,12 +122,15 @@ let animationFrameId = null
 
 // --- 计时器逻辑 ---
 const formattedTime = computed(() => {
-    const totalMs = elapsedTime.value;
-    const mm = Math.floor(totalMs / 60000).toString().padStart(2, '0');
-    const ss = Math.floor((totalMs % 60000) / 1000).toString().padStart(2, '0');
-    const SSS = (totalMs % 1000).toString().padStart(3, '0');
-    return `${mm}:${ss}.${SSS}`; // 
+    return formatTime(elapsedTime.value);
 })
+
+function formatTime(ms) {
+    const mm = Math.floor(ms / 60000).toString().padStart(2, '0');
+    const ss = Math.floor((ms % 60000) / 1000).toString().padStart(2, '0');
+    const SSS = (ms % 1000).toString().padStart(3, '0');
+    return `${mm}:${ss}.${SSS}`;
+}
 
 function startTimer() {
     startTime.value = Date.now() - elapsedTime.value;
@@ -452,6 +459,9 @@ function collectStar(r, c) {
 
 function handleWin() {
     stopTimer();
+    // 保存当前关卡用时
+    levelTimes.value[currentLevel.value - 1] = elapsedTime.value;
+    
     if(animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;

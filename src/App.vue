@@ -22,6 +22,7 @@
     const totalLevels = 3;
     const maps = ref(Array(totalLevels + 1).fill(null));
     const passed = ref(false)
+    const levelTimes = ref([0, 0, 0]) // 存储每个关卡的用时（毫秒）
 
     // 初始化地图数据的函数
     function initializeMapData() {
@@ -47,5 +48,6 @@
     provide('totalLevels', 3)
     provide('globalMaps', maps)
     provide('passed', passed)
+    provide('levelTimes', levelTimes)
 
 </script>
