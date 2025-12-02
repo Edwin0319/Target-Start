@@ -112,8 +112,7 @@ const checkSpawnFlag = ref(false)
 const checkStarFlag = ref(false)
 const loadConfirmFlag = ref(false)
 const globalMaps = inject('globalMaps')
-const levelsPassed = inject('levelsPassed')
-const levelsEdited = inject('levelsEdited')
+const passed = inject('passed')
 // 当前选中的工具ID
 const currentToolId = ref(null)
 const fileInput = ref(null)
@@ -123,10 +122,7 @@ const currentMapData = computed(() => globalMaps.value[activeLevel.value]);
 
 // 计算属性：是否可以导出
 const canExport = computed(() => {
-    for(let i = 1; i <= totalLevels; i++) {
-        if(!levelsPassed.value[i]) return false;
-    }
-    return true;
+    return passed.value;
 });
 
 // 工具列表配置
@@ -181,9 +177,7 @@ function handleUpdateTile({ row, col, toolId }) {
         currentMapData.value[row][col] = toolId;
     }
     
-    // 标记当前关卡已编辑，取消通过状态
-    levelsEdited.value[activeLevel.value] = true;
-    levelsPassed.value[activeLevel.value] = false;
+    passed.value = false
     
     // 触发更新
     globalMaps.value = [...globalMaps.value];
@@ -241,10 +235,9 @@ function confirmLoad() {
                 for(let i = 1; i <= totalLevels; i++) {
                     if(data[i]) {
                         globalMaps.value[i] = data[i];
-                        levelsPassed.value[i] = true;
-                        levelsEdited.value[i] = false;
                     }
                 }
+                passed.value = true;
                 globalMaps.value = [...globalMaps.value];
             } catch (error) {
                 console.error('Failed to load map:', error);

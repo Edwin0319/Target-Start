@@ -74,7 +74,7 @@ const getHomeFlag = ref(false)
 const switchView = inject('switchView')
 const globalMaps = inject('globalMaps')
 const totalLevels = inject('totalLevels')
-const levelsPassed = inject('levelsPassed')
+const passed = inject('passed')
 
 // 游戏状态
 const currentLevel = ref(1)
@@ -457,7 +457,6 @@ function handleWin() {
         animationFrameId = null;
     }
     // 标记当前关卡为已通过
-    levelsPassed.value[currentLevel.value] = true;
     if(currentLevel.value < totalLevels) {
         isGameWon.value = true;
     }
@@ -569,6 +568,7 @@ function finish() {
         animationFrameId = null;
     }
     stopTimer();
+    passed.value = true;
 
     // 这里应跳转到排行榜，暂时回主页
     switchView(MapEditorView);
