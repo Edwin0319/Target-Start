@@ -58,6 +58,7 @@
 <script setup>
 import { ref, inject, onMounted, onUnmounted, computed } from 'vue'
 import MainView from '@/views/MainView.vue'
+import MapEditorView from '@/views/MapEditorView.vue'
 import popUpWindow from '@/components/popUpWindow.vue'
 import { element_volume, horizontal_quantity, vertical_quantity, preloadImages, imageMap } from '@/components/CanvasOperation.js'
 // 导入图片资源用于绘制
@@ -73,6 +74,7 @@ const getHomeFlag = ref(false)
 const switchView = inject('switchView')
 const globalMaps = inject('globalMaps')
 const totalLevels = inject('totalLevels')
+const levelsPassed = inject('levelsPassed')
 
 // 游戏状态
 const currentLevel = ref(1)
@@ -454,6 +456,8 @@ function handleWin() {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
     }
+    // 标记当前关卡为已通过
+    levelsPassed.value[currentLevel.value] = true;
     if(currentLevel.value < totalLevels) {
         isGameWon.value = true;
     }
@@ -567,7 +571,7 @@ function finish() {
     stopTimer();
 
     // 这里应跳转到排行榜，暂时回主页
-    switchView(MainView);
+    switchView(MapEditorView);
 }
 
 function handleGameOverOK() {

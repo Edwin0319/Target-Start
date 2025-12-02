@@ -21,6 +21,8 @@
     // 定义全局地图数据
     const totalLevels = 3;
     const maps = ref(Array(totalLevels + 1).fill(null));
+    const levelsPassed = ref(Array(totalLevels + 1).fill(false)); // 关卡通过状态
+    const levelsEdited = ref(Array(totalLevels + 1).fill(false)); // 关卡编辑状态
 
     // 初始化地图数据的函数
     function initializeMapData() {
@@ -45,5 +47,7 @@
     provide('switchView', switchView)
     provide('totalLevels', 3)
     provide('globalMaps', maps)
+    provide('levelsPassed', levelsPassed)
+    provide('levelsEdited', levelsEdited)
 
 </script>

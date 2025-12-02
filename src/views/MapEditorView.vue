@@ -25,6 +25,16 @@
             <button @click="checkStarFlag = false" class="btn">OK</button>
         </template>
     </popUpWindow>
+    <popUpWindow :caution="loadConfirmFlag">
+        <template v-slot:info>
+            <p class="info-text">Map changes are not saved.</p>
+            <p class="info-text">Do you want to Continue?</p>
+        </template>
+        <template v-slot:button>
+            <button @click="loadConfirmFlag = false" class="btn mg-r-m">No</button>
+            <button @click="confirmLoad" class="btn">Yes</button>
+        </template>
+    </popUpWindow>
 
     <div class="menu-container">
         <img src="@/assets/images/menu.png" class="menu" :class="{ 'menu-open': isMenuOpen }" @click="toggleMenu"/>
@@ -40,8 +50,8 @@
                     </button>
                 </li>
                 <li><button class="btn mg-t-m" @click="goHome">Home</button></li>
-                <li><button class="btn">Load</button></li>
-                <li><button class="btn">Export</button></li>
+                <li><button class="btn" @click="loadMap">Load</button></li>
+                <li><button class="btn" :disabled="!canExport" @click="exportMap">Export</button></li>
             </ul>
         </div>
     </div>
@@ -100,12 +110,24 @@ const totalLevels = inject('totalLevels')
 const getHomeFlag = ref(false)
 const checkSpawnFlag = ref(false)
 const checkStarFlag = ref(false)
+const loadConfirmFlag = ref(false)
 const globalMaps = inject('globalMaps')
+const levelsPassed = inject('levelsPassed')
+const levelsEdited = inject('levelsEdited')
 // 当前选中的工具ID
 const currentToolId = ref(null)
+const fileInput = ref(null)
 
 // 计算属性：获取当前关卡的地图数据
 const currentMapData = computed(() => globalMaps.value[activeLevel.value]);
+
+// 计算属性：是否可以导出
+const canExport = computed(() => {
+    for(let i = 1; i <= totalLevels; i++) {
+        if(!levelsPassed.value[i]) return false;
+    }
+    return true;
+});
 
 // 工具列表配置
 const tools = [
@@ -159,6 +181,10 @@ function handleUpdateTile({ row, col, toolId }) {
         currentMapData.value[row][col] = toolId;
     }
     
+    // 标记当前关卡已编辑，取消通过状态
+    levelsEdited.value[activeLevel.value] = true;
+    levelsPassed.value[activeLevel.value] = false;
+    
     // 触发更新
     globalMaps.value = [...globalMaps.value];
 }
@@ -191,6 +217,58 @@ function playDemo() {
     }
 
     switchView(GameView);
+}
+
+function loadMap() {
+    loadConfirmFlag.value = true;
+    isMenuOpen.value = false;
+}
+
+function confirmLoad() {
+    loadConfirmFlag.value = false;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                // 覆盖地图数据
+                for(let i = 1; i <= totalLevels; i++) {
+                    if(data[i]) {
+                        globalMaps.value[i] = data[i];
+                        levelsPassed.value[i] = true;
+                        levelsEdited.value[i] = false;
+                    }
+                }
+                globalMaps.value = [...globalMaps.value];
+            } catch (error) {
+                console.error('Failed to load map:', error);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+function exportMap() {
+    const exportData = {};
+    for(let i = 1; i <= totalLevels; i++) {
+        exportData[i] = globalMaps.value[i];
+    }
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'map-export.json';
+    link.click();
+    URL.revokeObjectURL(url);
 }
 
 
