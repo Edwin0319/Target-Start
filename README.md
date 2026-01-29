@@ -1,5 +1,5 @@
-網址: target-start.vercel.app
-
+app網址: target-start.vercel.app
+github代碼庫: https://github.com/Edwin0319/Target-Start
 
 
 
