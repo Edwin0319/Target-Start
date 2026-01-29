@@ -1,8 +1,12 @@
+網址: target-start.vercel.app
+
+
+
+
+
 文件夹	作用	对应项目需求
 views/	
 对应项目的五个主要页面 。
-
-
 
 
 
@@ -15,8 +19,6 @@ components/MapEditor/	专门用于地图编辑页的复杂组件。
 
 components/Game/	专门用于游戏页的组件。	
 游戏界面 (Game Interface) 、生命值显示 、计时器显示 、暂停按钮 。
-
-
 
 
 
